@@ -1,7 +1,9 @@
 {
-    "0": "daisy",
-    "1": "dandelion",
-    "2": "roses",
-    "3": "sunflowers",
-    "4": "tulips"
+    "0": "MEL",      // Melanoma
+    "1": "NV",       // Melanocytic nevus
+    "2": "BCC",      // Basal cell carcinoma
+    "3": "AKIEC",    // Actinic keratosis
+    "4": "BKL",      // Benign keratosis
+    "5": "DF",       // Dermatofibroma
+    "6": "VASC",     // Vascular lesion
 }
