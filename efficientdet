@@ -1,0 +1,93 @@
+import paddle
+from effdet import create_dataset, create_model, create_evaluator, resolve_input_config
+from effdet.data.loader import create_loader
+
+# 训练函数
+def train(args):
+    # 创建数据集
+    dataset = create_dataset(args.dataset, args.dataset_dir, split='train')
+
+    # 创建模型
+    model = create_model(args.model, bench_task='train', num_classes=args.num_classes,
+                         pretrained=args.pretrained, checkpoint_path=args.path)
+    model_config = model.config
+
+    # 解析输入配置
+    input_config = resolve_input_config(args, model_config)
+    loader = create_loader(dataset, input_size=input_config['input_size'],
+                           batch_size=args.batch_size,
+                           is_training=True,
+                           **input_config)
+
+    # 设置为训练模式
+    model.train()
+
+    # 创建优化器
+    optimizer = paddle.optimizer.Adam(parameters=model.parameters(), learning_rate=0.001)
+
+    # 开始训练
+    for epoch in range(args.stop_epoch):
+        for batch_idx, (input, target) in enumerate(loader()):
+            output = model(input, target)
+            loss = output['loss']
+            loss.backward()
+            optimizer.step()
+            optimizer.clear_grad()
+            if batch_idx % 10 == 0:
+                print(f'epoch: {epoch}, batch: {batch_idx}, loss: {loss}')
+
+        # 保存模型
+        paddle.save(model.state_dict(), f'{args.model_dir}/epoch_{epoch}.pdparams')
+
+# 验证函数
+def validate(args):
+    # 创建数据集
+    dataset = create_dataset(args.dataset, args.dataset_dir, split='val')
+
+    # 创建模型
+    model = create_model(args.model, bench_task='predict', num_classes=args.num_classes,
+                         pretrained=args.pretrained, checkpoint_path=args.path)
+    model_config = model.config
+
+    # 解析输入配置
+    input_config = resolve_input_config(args, model_config)
+    loader = create_loader(dataset, input_size=input_config['input_size'],
+                           batch_size=args.batch_size,
+                           **input_config)
+
+    # 设置为评估模式
+    model.eval()
+
+    # 创建评估器
+    evaluator = create_evaluator(args.dataset, dataset)
+
+    # 开始评估
+    for input, target in loader():
+        output = model(input, img_info=target)
+        evaluator.add_predictions(output, target)
+
+    # 计算mAP
+    mean_ap = evaluator.evaluate()
+    return mean_ap
+
+# 主函数
+if __name__ == '__main__':
+    # 解析命令行参数
+    parser = ArgumentParser(description='Paddle EfficientDet Training and Validation')
+    parser.add_argument('--model', type=str, default='efficientdet_d0', help='model name')
+    parser.add_argument('--dataset_dir', type=str, required=True, help='path to the dataset')
+    parser.add_argument('--pretrained', type=bool, default=False, help='whether to load pretrained model')
+    parser.add_argument('--path', type=str, default='', help='path to the model')
+    parser.add_argument('--num_classes', type=int, default=90, help='class numbers of the dataset')
+    parser.add_argument('--batch_size', type=int, default=128, help='batch size')
+    parser.add_argument('--stop_epoch', type=int, default=100, help='number of epochs to train')
+    parser.add_argument('--model_dir', type=str, default='./models', help='directory to save the model')
+
+    args = parser.parse_args()
+
+    # 训练模型
+    train(args)
+
+    # 验证模型
+    mAP = validate(args)
+    print('mAP:', mAP)
