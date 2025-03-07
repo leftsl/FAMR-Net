@@ -92,26 +92,3 @@ class RefiningModule(nn.Layer):
         return final_output
 
 
-class FeedbackImplicitAttention(nn.Layer):
-    def __init__(self, in_dim, num_heads):
-        super(FeedbackImplicitAttention, self).__init__()
-        self.num_heads = num_heads
-        self.head_dim = in_dim // num_heads
-        self.q_linear = nn.Linear(in_dim, in_dim)
-        self.k_linear = nn.Linear(in_dim, in_dim)
-        self.v_linear = nn.Linear(in_dim, in_dim)
-        self.out_linear = nn.Linear(in_dim, in_dim)
-        self.silu = nn.Silu()
-
-    def forward(self, x):
-        batch_size, seq_len, in_dim = x.shape
-        q = self.q_linear(x).reshape([batch_size, seq_len, self.num_heads, self.head_dim]).transpose([0, 2, 1, 3])
-        k = self.k_linear(x).reshape([batch_size, seq_len, self.num_heads, self.head_dim]).transpose([0, 2, 1, 3])
-        v = self.v_linear(x).reshape([batch_size, seq_len, self.num_heads, self.head_dim]).transpose([0, 2, 1, 3])
-
-        attn = paddle.matmul(q, k.transpose([0, 1, 3, 2])) / np.sqrt(self.head_dim)
-        attn = paddle.softmax(attn, axis=-1)
-        x = paddle.matmul(attn, v).transpose([0, 2, 1, 3]).reshape([batch_size, seq_len, in_dim])
-        x = self.out_linear(x)
-        x = self.silu(x)
-        return x
