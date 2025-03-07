@@ -1,0 +1,4 @@
+lesion_id,image_id,dx,dx_type,age,sex,localization,dataset
+HAM_0002867,ISIC_0033536,akiec,histo,40.0,male,abdomen,vidir_modern
+HAM_0000239,ISIC_0032854,akiec,histo,80.0,male,face,vidir_modern
+HAM_0003521,ISIC_0032258,mel,histo,70.0,female,back,vidir_modern
