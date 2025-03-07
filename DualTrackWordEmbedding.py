@@ -1,7 +1,6 @@
 import paddle
 import paddle.nn as nn
 
-
 class DualTrackWordEmbedding(nn.Layer):
     def __init__(self, vocab_size, embedding_dim, hidden_dim, num_layers=1, dropout=0.2):
         super(DualTrackWordEmbedding, self).__init__()
@@ -11,32 +10,32 @@ class DualTrackWordEmbedding(nn.Layer):
         self.num_layers = num_layers
         self.dropout = dropout
 
-        # 词嵌入层
+        # Word embedding layer
         self.word_embedding = nn.Embedding(vocab_size, embedding_dim)
 
-        # 第一个 BiLSTM 层
+        # First BiLSTM layer
         self.bilstm_1 = nn.LSTM(embedding_dim, hidden_dim, num_layers=num_layers, direction='bidirectional',
                                 dropout=dropout)
-        # 第二个 BiLSTM 层
+        # Second BiLSTM layer
         self.bilstm_2 = nn.LSTM(embedding_dim, hidden_dim, num_layers=num_layers, direction='bidirectional',
                                 dropout=dropout)
 
-        # 用于将 BiLSTM 输出维度调整为嵌入维度
+        # Linear layer to adjust the output dimension of BiLSTM to the embedding dimension
         self.adjust_linear = nn.Linear(2 * hidden_dim, embedding_dim)
 
     def forward(self, text):
         batch_size, seq_len = text.shape
-        # 进行词嵌入
+        # Perform word embedding
         word_embeds = self.word_embedding(text)
 
-        # 初始化第一个 BiLSTM 的隐藏状态和细胞状态
+        # Initialize hidden state and cell state for the first BiLSTM
         h_0_1 = paddle.zeros([2 * self.num_layers, batch_size, self.hidden_dim])
         c_0_1 = paddle.zeros([2 * self.num_layers, batch_size, self.hidden_dim])
-        # 初始化第二个 BiLSTM 的隐藏状态和细胞状态
+        # Initialize hidden state and cell state for the second BiLSTM
         h_0_2 = paddle.zeros([2 * self.num_layers, batch_size, self.hidden_dim])
         c_0_2 = paddle.zeros([2 * self.num_layers, batch_size, self.hidden_dim])
 
-        # 存储每一步的编码结果
+        # Store encoding results for each step
         encoded_outputs = []
         prev_encoding = None
 
@@ -44,29 +43,29 @@ class DualTrackWordEmbedding(nn.Layer):
             current_word_embed = word_embeds[:, t:t + 1, :]
 
             if prev_encoding is not None:
-                # 将前一个编码与当前词嵌入拼接后输入第一个 BiLSTM
+                # Concatenate the previous encoding with the current word embedding and input to the first BiLSTM
                 input_1 = paddle.concat([prev_encoding, current_word_embed], axis=-1)
             else:
                 input_1 = current_word_embed
 
-            # 通过第一个 BiLSTM 进行处理
+            # Process through the first BiLSTM
             output_1, (h_1, c_1) = self.bilstm_1(input_1, (h_0_1, c_0_1))
 
-            # 通过第二个 BiLSTM 进行处理
+            # Process through the second BiLSTM
             output_2, (h_2, c_2) = self.bilstm_2(current_word_embed, (h_0_2, c_0_2))
 
-            # 对第二个 BiLSTM 的输出进行维度调整
+            # Adjust the dimension of the output from the second BiLSTM
             prev_encoding = self.adjust_linear(output_2)
 
-            # 存储当前步骤的编码结果
+            # Store the encoding result of the current step
             encoded_outputs.append(prev_encoding)
 
-            # 更新隐藏状态和细胞状态
+            # Update hidden state and cell state
             h_0_1 = h_1
             c_0_1 = c_1
             h_0_2 = h_2
             c_0_2 = c_2
 
-        # 将所有步骤的编码结果拼接起来
+        # Concatenate the encoding results of all steps
         encoded_outputs = paddle.concat(encoded_outputs, axis=1)
         return encoded_outputs
