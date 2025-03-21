@@ -11,5 +11,4 @@ Our code draws on [https://aistudio.baidu.com/projectdetail/2284096?searchKeywor
 [https://aistudio.baidu.com/projectdetail/6432178?searchKeyword=efficientnet&searchTab=PROJECT](https://aistudio.baidu.com/projectdetail/6432178?searchKeyword=efficientnet&searchTab=PROJECT)
 and others open source code.
 
-# The paper involved in this method has not been published yet
-The remaining code will be completed after publication
+
