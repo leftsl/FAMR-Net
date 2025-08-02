@@ -1,5 +1,5 @@
 # FAMR-Net
-This is the FAME-NET network implementation code .
+This is the FAME-Net network implementation code .
 All datasets used in this paper are public datasets, which can be downloaded through public channels upon request.[https://physionet.org/content/mimic-cxr-jpg/2.1.0/](https://physionet.org/content/mimic-cxr-jpg/2.1.0/) and [https://openi.nlm.nih.gov/.](https://openi.nlm.nih.gov/.)
 # dataset test
 The original file is too large, so I uploaded a test data set. You need to arrange your own dataset according to this format during training before it can run normally.
